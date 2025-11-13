@@ -1,0 +1,39 @@
+# Source files
+src/
+public/
+attached_assets/
+
+# Build configs
+vite.config.ts
+tsconfig.json
+tsconfig.app.json
+tsconfig.lib.json
+tsconfig.node.json
+tailwind.config.ts
+postcss.config.js
+eslint.config.js
+components.json
+
+# App files
+index.html
+dist/
+
+# Development
+.vscode/
+.git/
+.github/
+node_modules/
+*.log
+*.lock
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Misc
+.DS_Store
+.env
+.env.*
+*.tsbuildinfo

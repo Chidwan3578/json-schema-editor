@@ -18,6 +18,7 @@ export interface UseSchemaBuilderReturn {
   updateMetadata: (field: keyof SchemaMetadata, value: string) => void;
   importSchema: () => Promise<void>;
   downloadSchema: () => void;
+  loadSchema: (schema: any) => void;
 }
 
 export const useSchemaBuilder = (
@@ -90,6 +91,15 @@ export const useSchemaBuilder = (
     downloadJsonFile(schema, "schema.json");
   };
 
+  // Load schema programmatically
+  const loadSchema = (schemaData: any) => {
+    const parsed = parseSchema(schemaData);
+    setProperties(parsed.properties);
+    if (parsed.metadata && includeMetadata) {
+      setMetadata(parsed.metadata);
+    }
+  };
+
   return {
     properties,
     metadata,
@@ -101,5 +111,6 @@ export const useSchemaBuilder = (
     updateMetadata,
     importSchema,
     downloadSchema,
+    loadSchema,
   };
 };
