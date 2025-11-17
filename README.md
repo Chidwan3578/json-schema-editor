@@ -1,4 +1,4 @@
-# JSON Schema Editor
+# JSON Schema Builder
 
 A beautiful, interactive React component for building and editing JSON schemas visually. Built with TypeScript, Tailwind CSS, and Radix UI.
 
@@ -9,6 +9,7 @@ A beautiful, interactive React component for building and editing JSON schemas v
 - 🎨 **Visual Editor** - Build JSON schemas with an intuitive drag-and-drop interface
 - 📝 **Full JSON Schema Support** - Support for all JSON Schema types and constraints
 - 🎯 **Type-Safe** - Written in TypeScript with full type definitions
+- ✅ **Official JSON Schema Types** - Uses `@types/json-schema` for spec compliance
 - 🎨 **Customizable** - Flexible API with extensive customization options
 - 📦 **Headless Options** - Use just the hooks and utilities without UI
 - 🌗 **Theme Support** - Built-in dark mode support
@@ -17,11 +18,11 @@ A beautiful, interactive React component for building and editing JSON schemas v
 ## Installation
 
 ```bash
-npm install json-schema-editor
+npm install json-schema-builder-react
 # or
-yarn add json-schema-editor
+yarn add json-schema-builder-react
 # or
-pnpm add json-schema-editor
+pnpm add json-schema-builder-react
 ```
 
 ### Styling
@@ -35,7 +36,7 @@ This library uses Tailwind CSS utility classes. You'll need Tailwind CSS configu
 ### Basic Example
 
 ```tsx
-import { JsonSchemaEditor } from 'json-schema-editor';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
 function App() {
   const handleSchemaChange = (schema) => {
@@ -43,7 +44,7 @@ function App() {
   };
 
   return (
-    <JsonSchemaEditor 
+    <JsonSchemaBuilder 
       onSchemaChange={handleSchemaChange}
     />
   );
@@ -53,7 +54,7 @@ function App() {
 ### With Initial Schema
 
 ```tsx
-import { JsonSchemaEditor } from 'json-schema-editor';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
 const initialSchema = {
   type: 'object',
@@ -66,7 +67,7 @@ const initialSchema = {
 
 function App() {
   return (
-    <JsonSchemaEditor 
+    <JsonSchemaBuilder 
       initialSchema={initialSchema}
       onSchemaChange={(schema) => {
         // Save to backend, localStorage, etc.
@@ -80,22 +81,22 @@ function App() {
 ### Customized Layout
 
 ```tsx
-import { JsonSchemaEditor } from 'json-schema-editor';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
 function App() {
   return (
-    <JsonSchemaEditor
+    <JsonSchemaBuilder
       showMetadata={true}
       showImport={false}
       showClear={true}
       showOutput={true}
       className="h-[600px]"
-      headerContent={
-        <div>
-          <h1>My Custom Header</h1>
-          <button>Custom Action</button>
-        </div>
-      }
+      typeLabels={{
+        string: 'Text',
+        boolean: 'Yes/No',
+        object: 'Form',
+        array: 'List',
+      }}
     />
   );
 }
@@ -103,7 +104,7 @@ function App() {
 
 ## API Reference
 
-### JsonSchemaEditor Props
+### JsonSchemaBuilder Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -115,13 +116,56 @@ function App() {
 | `showOutput` | `boolean` | `true` | Show JSON output panel |
 | `headerContent` | `ReactNode` | `undefined` | Custom header content |
 | `className` | `string` | `"h-screen"` | Custom className for container |
+| `typeLabels` | `TypeLabels` | Default labels | Custom labels for property types (e.g., `{ string: 'Text', boolean: 'Yes/No' }`) |
+
+### Customizing Type Labels
+
+You can customize how property types are displayed to your users:
+
+```tsx
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
+import type { TypeLabels } from 'json-schema-builder-react';
+
+const customLabels: TypeLabels = {
+  string: 'Text',
+  number: 'Number',
+  integer: 'Whole Number',
+  boolean: 'Yes/No',
+  object: 'Form',
+  array: 'List',
+  null: 'Empty'
+};
+
+function App() {
+  return (
+    <JsonSchemaBuilder 
+      typeLabels={customLabels}
+      onSchemaChange={(schema) => console.log(schema)}
+    />
+  );
+}
+```
+
+This affects:
+- The type dropdown in the property editor
+- Type labels shown in property cards
+- Tooltips displaying type information
+
+**Available types to customize:**
+- `string` - Default: "String"
+- `number` - Default: "Number"
+- `integer` - Default: "Integer"
+- `boolean` - Default: "Boolean"
+- `object` - Default: "Object"
+- `array` - Default: "Array"
+- `null` - Default: "Null"
 
 ## Headless Usage
 
 Use just the hooks and utilities without the UI components:
 
 ```tsx
-import { useSchemaBuilder, generateSchema } from 'json-schema-editor';
+import { useSchemaBuilder, generateSchema } from 'json-schema-builder-react';
 
 function MyCustomEditor() {
   const {
@@ -156,7 +200,7 @@ function MyCustomEditor() {
 ## Available Exports
 
 ### Components
-- `JsonSchemaEditor` - Main editor component
+- `JsonSchemaBuilder` - Main builder component
 - `PropertyDocument` - Individual property card
 - `PropertyEditDialog` - Property edit modal
 - `JsonOutput` - JSON output display
@@ -173,10 +217,13 @@ function MyCustomEditor() {
 - `importJsonFile` - Import schema from file
 
 ### Types
-- `PropertyData` - Property data structure
-- `PropertyType` - Supported property types
-- `PropertyConstraints` - Property constraint types
+- `PropertyData` - Internal UI representation of a JSON Schema property (extends JSON Schema fields)
+- `PropertyType` - JSON Schema type names (from `@types/json-schema`)
 - `SchemaMetadata` - Schema metadata structure
+- `JSONSchema7` - Official JSON Schema Draft 7 type (from `@types/json-schema`)
+- `JSONSchema7TypeName` - JSON Schema type names (from `@types/json-schema`)
+
+**Note**: This library uses official JSON Schema types from `@types/json-schema` to ensure compatibility with the JSON Schema specification.
 
 ## Examples
 
@@ -186,7 +233,7 @@ function MyCustomEditor() {
 import { 
   PropertyDocument, 
   useSchemaBuilder 
-} from 'json-schema-editor';
+} from 'json-schema-builder-react';
 
 function CustomEditor() {
   const { properties, updateProperty, deleteProperty } = useSchemaBuilder();
@@ -209,8 +256,8 @@ function CustomEditor() {
 ### Programmatic Schema Generation
 
 ```tsx
-import { generateSchema } from 'json-schema-editor';
-import type { PropertyData } from 'json-schema-editor';
+import { generateSchema } from 'json-schema-builder-react';
+import type { PropertyData } from 'json-schema-builder-react';
 
 const properties: PropertyData[] = [
   {

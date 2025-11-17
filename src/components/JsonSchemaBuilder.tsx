@@ -6,13 +6,14 @@ import PropertyEditDialog from "@/components/PropertyEditDialog";
 import JsonOutput from "@/components/JsonOutput";
 import SchemaMetadata from "@/components/SchemaMetadata";
 import { useToast } from "@/hooks/use-toast";
-import type { PropertyData, SchemaMetadata as SchemaMetadataType } from "@/types/schema";
+import type { PropertyData, SchemaMetadata as SchemaMetadataType, PropertyType } from "@/types/schema";
 import { useSchemaBuilder } from "@/hooks/useSchemaBuilder";
 import ThemeToggle from "./ThemeToggle";
+import { TypeLabelsProvider, type TypeLabels } from "@/contexts/TypeLabelsContext";
 
-export interface JsonSchemaEditorProps {
+export interface JsonSchemaBuilderProps {
   /**
-   * Initial schema to load into the editor
+   * Initial schema to load into the builder
    */
   initialSchema?: any;
   
@@ -51,12 +52,18 @@ export interface JsonSchemaEditorProps {
   className?: string;
 
   showHeader?: boolean;
+
+  /**
+   * Custom labels for property types
+   * @example { string: 'Text', boolean: 'Yes/No', object: 'Form', array: 'List' }
+   */
+  typeLabels?: TypeLabels;
 }
 
 /**
- * A visual JSON Schema editor component that allows building JSON schemas interactively
+ * A visual JSON Schema builder component that allows building JSON schemas interactively
  */
-export function JsonSchemaEditor({
+export function JsonSchemaBuilder({
   initialSchema,
   onSchemaChange,
   showMetadata = false,
@@ -65,7 +72,8 @@ export function JsonSchemaEditor({
   showOutput = true,
   showHeader = true,
   className = "h-screen",
-}: JsonSchemaEditorProps) {
+  typeLabels,
+}: JsonSchemaBuilderProps) {
   const [newProperty, setNewProperty] = useState<PropertyData | null>(null);
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const { toast } = useToast();
@@ -143,8 +151,9 @@ export function JsonSchemaEditor({
   };
 
   return (
-    <div className={`${className} flex flex-col`}>
-      {showHeader && (<header className="h-16 border-b flex items-center justify-between px-6">
+    <TypeLabelsProvider customLabels={typeLabels}>
+      <div className={`${className} flex flex-col`}>
+        {showHeader && (<header className="h-16 border-b flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             {showImport && (
               <Button
@@ -201,7 +210,7 @@ export function JsonSchemaEditor({
               </div>
             ) : (
               <>
-                <div className="space-y-8">
+                <div className="space-y-1">
                   {properties.map((property) => (
                     <PropertyDocument
                       key={property.id}
@@ -261,6 +270,7 @@ export function JsonSchemaEditor({
           onUpdate={setNewProperty}
         />
       )}
-    </div>
+      </div>
+    </TypeLabelsProvider>
   );
 }

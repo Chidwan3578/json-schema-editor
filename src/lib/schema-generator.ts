@@ -1,6 +1,7 @@
 // JSON Schema generation utilities
 
 import type { PropertyData, SchemaMetadata } from "@/types/schema";
+import { JSONSchema7 } from "json-schema";
 
 /**
  * Generate a JSON Schema from property definitions
@@ -9,8 +10,8 @@ export const generateSchema = (
   properties: PropertyData[],
   metadata?: SchemaMetadata,
   includeMetadata: boolean = true,
-): any => {
-  const schema: any = {
+): JSONSchema7 => {
+  const schema: JSONSchema7 = {
     $schema: "http://json-schema.org/draft-07/schema#",
     type: "object",
   };
@@ -41,46 +42,53 @@ export const generateSchema = (
 /**
  * Recursively build property schemas
  */
-const buildProperties = (props: PropertyData[]): any => {
-  const result: any = {};
+const buildProperties = (props: PropertyData[]): Record<string, JSONSchema7> => {
+  const result: Record<string, JSONSchema7> = {};
 
   props.forEach((prop) => {
     if (!prop.key) return;
 
-    const propSchema: any = { type: prop.type };
+    // Convert 'file' type to string with format = filename for JSON Schema compliance
+    const schemaType = prop.type === 'file' ? 'string' : prop.type;
+    const propSchema: JSONSchema7 = { type: schemaType };
 
     // Add common fields
     if (prop.title) propSchema.title = prop.title;
     if (prop.description) propSchema.description = prop.description;
 
+    // For file type, add format to indicate special content
+    if (prop.type === 'file') {
+      propSchema.format = 'filename';
+    }
+
     // String constraints
     if (prop.type === "string") {
-      if (prop.constraints.minLength !== undefined)
-        propSchema.minLength = prop.constraints.minLength;
-      if (prop.constraints.maxLength !== undefined)
-        propSchema.maxLength = prop.constraints.maxLength;
-      if (prop.constraints.pattern)
-        propSchema.pattern = prop.constraints.pattern;
-      if (prop.constraints.enum && prop.constraints.enum.length > 0)
-        propSchema.enum = prop.constraints.enum;
+      if (prop.minLength !== undefined)
+        propSchema.minLength = prop.minLength;
+      if (prop.maxLength !== undefined)
+        propSchema.maxLength = prop.maxLength;
+      if (prop.pattern)
+        propSchema.pattern = prop.pattern;
+      if (prop.enum && prop.enum.length > 0)
+        propSchema.enum = prop.enum;
     }
 
     // Numeric constraints
     if (prop.type === "number" || prop.type === "integer") {
-      if (prop.constraints.minimum !== undefined)
-        propSchema.minimum = prop.constraints.minimum;
-      if (prop.constraints.maximum !== undefined)
-        propSchema.maximum = prop.constraints.maximum;
+      if (prop.minimum !== undefined)
+        propSchema.minimum = prop.minimum;
+      if (prop.maximum !== undefined)
+        propSchema.maximum = prop.maximum;
     }
 
     // Array constraints
     if (prop.type === "array") {
-      if (prop.constraints.minItems !== undefined)
-        propSchema.minItems = prop.constraints.minItems;
-      if (prop.constraints.maxItems !== undefined)
-        propSchema.maxItems = prop.constraints.maxItems;
-      if (prop.constraints.uniqueItems)
-        propSchema.uniqueItems = prop.constraints.uniqueItems;
+      if (prop.minItems !== undefined)
+        propSchema.minItems = prop.minItems;
+      if (prop.maxItems !== undefined)
+        propSchema.maxItems = prop.maxItems;
+      if (prop.uniqueItems)
+        propSchema.uniqueItems = prop.uniqueItems;
 
       // Add items schema recursively
       if (prop.items) {

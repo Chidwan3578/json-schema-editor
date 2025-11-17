@@ -23,7 +23,7 @@ export default defineConfig({
         // Library build configuration
         lib: {
           entry: path.resolve(__dirname, "src/index.ts"),
-          name: "JsonSchemaEditor",
+          name: "JsonSchemaBuilder",
           formats: ["es", "cjs"],
           fileName: (format) => `index.${format === "es" ? "js" : "cjs"}`,
         },

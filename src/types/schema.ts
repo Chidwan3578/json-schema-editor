@@ -1,38 +1,47 @@
 // Domain types for JSON Schema Builder
 
-export type PropertyType =
-  | "string"
-  | "number"
-  | "integer"
-  | "boolean"
-  | "object"
-  | "array"
-  | "null";
+import type { JSONSchema7TypeName } from "json-schema";
 
-export interface PropertyConstraints {
+// Use JSON Schema's type definitions with custom extensions
+export type PropertyType = JSONSchema7TypeName | 'file';
+
+/**
+ * Internal UI representation of a JSON Schema property
+ * This extends JSONSchema7 with additional metadata needed for the builder UI
+ */
+export interface PropertyData {
+  // UI-specific fields
+  id: string;           // Internal ID for React keys
+  key: string;          // Property name/key in the schema
+  required: boolean;    // Whether this property is in the required array
+  
+  // JSON Schema fields (subset for simplicity)
+  type: PropertyType;
+  title?: string;
+  description?: string;
+  
+  // Validation constraints (from JSON Schema)
+  // String validation
   minLength?: number;
   maxLength?: number;
   pattern?: string;
+  enum?: string[];
+  
+  // Numeric validation
   minimum?: number;
   maximum?: number;
+  
+  // Array validation
   minItems?: number;
   maxItems?: number;
   uniqueItems?: boolean;
-  enum?: string[];
+  items?: PropertyData;      // For arrays: schema of items (recursive)
+  
+  // Object validation
+  children?: PropertyData[]; // For objects: nested properties
 }
 
-export interface PropertyData {
-  id: string;
-  key: string;
-  title?: string;
-  type: PropertyType;
-  description?: string;
-  required: boolean;
-  constraints: PropertyConstraints;
-  children?: PropertyData[];
-  items?: PropertyData; // For arrays: schema of items (recursive)
-}
-
+// Schema metadata (not part of JSON Schema spec, but commonly used)
 export interface SchemaMetadata {
   title: string;
   description: string;

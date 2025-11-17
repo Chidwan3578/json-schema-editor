@@ -7,10 +7,9 @@ import { downloadJsonFile } from "@/lib/file-utils";
 
 interface JsonOutputProps {
   schema: any;
-  errors?: string[];
 }
 
-export default function JsonOutput({ schema, errors = [] }: JsonOutputProps) {
+export default function JsonOutput({ schema }: JsonOutputProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -80,33 +79,6 @@ export default function JsonOutput({ schema, errors = [] }: JsonOutputProps) {
           </pre>
         </Card>
       </div>
-
-      {errors.length > 0 && (
-        <div className="border-t p-4 max-h-48 overflow-auto">
-          <h3 className="text-sm font-medium mb-2 text-destructive">
-            Validation Errors
-          </h3>
-          <div className="space-y-2">
-            {errors.map((error, idx) => (
-              <div
-                key={idx}
-                className="text-xs text-destructive flex gap-2"
-                data-testid={`text-error-${idx}`}
-              >
-                <span>•</span>
-                <span>{error}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {errors.length === 0 && (
-        <div className="border-t p-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <CheckCircle2 className="w-4 h-4 text-green-500" />
-          <span>Schema is valid</span>
-        </div>
-      )}
     </div>
   );
 }

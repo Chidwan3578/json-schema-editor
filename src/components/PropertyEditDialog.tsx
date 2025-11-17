@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import type { PropertyData, PropertyType } from "@/types/schema";
 import { usePropertyEditor } from "@/hooks/usePropertyEditor";
+import { useTypeLabels } from "@/contexts/TypeLabelsContext";
 
 interface PropertyEditDialogProps {
   property: PropertyData;
@@ -35,8 +36,8 @@ export default function PropertyEditDialog({
   onUpdate,
   isArrayItem = false,
 }: PropertyEditDialogProps) {
+  const { typeLabels } = useTypeLabels();
   const {
-    isKeyManuallyEdited,
     handleTitleChange,
     handleTitleBlur,
     handleKeyChange,
@@ -69,13 +70,14 @@ export default function PropertyEditDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="string">String</SelectItem>
-                <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="integer">Integer</SelectItem>
-                <SelectItem value="boolean">Boolean</SelectItem>
-                <SelectItem value="object">Object</SelectItem>
-                <SelectItem value="array">Array</SelectItem>
-                <SelectItem value="null">Null</SelectItem>
+                <SelectItem value="string">{typeLabels.string}</SelectItem>
+                <SelectItem value="number">{typeLabels.number}</SelectItem>
+                <SelectItem value="integer">{typeLabels.integer}</SelectItem>
+                <SelectItem value="boolean">{typeLabels.boolean}</SelectItem>
+                <SelectItem value="object">{typeLabels.object}</SelectItem>
+                <SelectItem value="array">{typeLabels.array}</SelectItem>
+                <SelectItem value="file">{typeLabels.file}</SelectItem>
+                <SelectItem value="null">{typeLabels.null}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -119,7 +121,7 @@ export default function PropertyEditDialog({
           {property.type === "array" && (
             <div className="space-y-2 border-l-2 border-border pl-4 mt-2">
               <Label className="font-semibold text-xs text-muted-foreground">
-                Array Items
+                {typeLabels.array} Items
               </Label>
               {property.items ? (
                 <div className="bg-muted/40 p-2 rounded">
@@ -142,13 +144,14 @@ export default function PropertyEditDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="string">String</SelectItem>
-                        <SelectItem value="number">Number</SelectItem>
-                        <SelectItem value="integer">Integer</SelectItem>
-                        <SelectItem value="boolean">Boolean</SelectItem>
-                        <SelectItem value="object">Object</SelectItem>
-                        <SelectItem value="array">Array</SelectItem>
-                        <SelectItem value="null">Null</SelectItem>
+                        <SelectItem value="string">{typeLabels.string}</SelectItem>
+                        <SelectItem value="number">{typeLabels.number}</SelectItem>
+                        <SelectItem value="integer">{typeLabels.integer}</SelectItem>
+                        <SelectItem value="boolean">{typeLabels.boolean}</SelectItem>
+                        <SelectItem value="object">{typeLabels.object}</SelectItem>
+                        <SelectItem value="array">{typeLabels.array}</SelectItem>
+                        <SelectItem value="file">{typeLabels.file}</SelectItem>
+                        <SelectItem value="null">{typeLabels.null}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -185,7 +188,7 @@ export default function PropertyEditDialog({
                     className="mt-2"
                     onClick={() => onUpdate({ ...property, items: undefined })}
                   >
-                    Remove Array Item Schema
+                    Remove {typeLabels.array} Item Schema
                   </Button>
                 </div>
               ) : (
@@ -201,12 +204,11 @@ export default function PropertyEditDialog({
                         key: "item",
                         type: "string",
                         required: false,
-                        constraints: {},
                       },
                     });
                   }}
                 >
-                  Add Array Item Schema
+                  Add {typeLabels.array} Item Schema
                 </Button>
               )}
             </div>
@@ -231,7 +233,7 @@ export default function PropertyEditDialog({
 
         {property.type === "string" && (
           <div className="space-y-4 p-4 border rounded-md">
-            <h4 className="text-sm font-medium">String Constraints</h4>
+            <h4 className="text-sm font-medium">{typeLabels.string} Constraints</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="min-length">Minimum Length</Label>
@@ -239,7 +241,7 @@ export default function PropertyEditDialog({
                   id="min-length"
                   type="number"
                   placeholder="0"
-                  value={property.constraints.minLength || ""}
+                  value={property.minLength || ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "minLength",
@@ -255,7 +257,7 @@ export default function PropertyEditDialog({
                   id="max-length"
                   type="number"
                   placeholder="∞"
-                  value={property.constraints.maxLength || ""}
+                  value={property.maxLength || ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "maxLength",
@@ -271,7 +273,7 @@ export default function PropertyEditDialog({
               <Input
                 id="pattern"
                 placeholder="^[a-z]+$"
-                value={property.constraints.pattern || ""}
+                value={property.pattern || ""}
                 onChange={(e) =>
                   handleConstraintChange("pattern", e.target.value)
                 }
@@ -282,19 +284,19 @@ export default function PropertyEditDialog({
             <div className="space-y-2">
               <Label>Enum Values</Label>
               <div className="space-y-2">
-                {[...(property.constraints.enum || []), ""].map(
+                {[...(property.enum || []), ""].map(
                   (value, index) => (
                     <Input
                       key={index}
                       placeholder={
-                        index === (property.constraints.enum?.length || 0)
+                        index === (property.enum?.length || 0)
                           ? "Add new value..."
                           : "Enum value"
                       }
                       value={value}
                       onChange={(e) => {
                         const newValue = e.target.value;
-                        const currentEnum = property.constraints.enum || [];
+                        const currentEnum = property.enum || [];
 
                         if (index === currentEnum.length) {
                           // Adding new value to the placeholder input
@@ -344,7 +346,7 @@ export default function PropertyEditDialog({
                   id="minimum"
                   type="number"
                   placeholder="-∞"
-                  value={property.constraints.minimum ?? ""}
+                  value={property.minimum ?? ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "minimum",
@@ -360,7 +362,7 @@ export default function PropertyEditDialog({
                   id="maximum"
                   type="number"
                   placeholder="∞"
-                  value={property.constraints.maximum ?? ""}
+                  value={property.maximum ?? ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "maximum",
@@ -376,7 +378,7 @@ export default function PropertyEditDialog({
 
         {property.type === "array" && (
           <div className="space-y-4 p-4 border rounded-md">
-            <h4 className="text-sm font-medium">Array Constraints</h4>
+            <h4 className="text-sm font-medium">{typeLabels.array} Constraints</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="min-items">Minimum Items</Label>
@@ -384,7 +386,7 @@ export default function PropertyEditDialog({
                   id="min-items"
                   type="number"
                   placeholder="0"
-                  value={property.constraints.minItems || ""}
+                  value={property.minItems || ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "minItems",
@@ -400,7 +402,7 @@ export default function PropertyEditDialog({
                   id="max-items"
                   type="number"
                   placeholder="∞"
-                  value={property.constraints.maxItems || ""}
+                  value={property.maxItems || ""}
                   onChange={(e) =>
                     handleConstraintChange(
                       "maxItems",
@@ -414,7 +416,7 @@ export default function PropertyEditDialog({
             <div className="flex items-center gap-2">
               <Checkbox
                 id="unique-items"
-                checked={property.constraints.uniqueItems || false}
+                checked={property.uniqueItems || false}
                 onCheckedChange={(checked) =>
                   handleConstraintChange("uniqueItems", checked)
                 }

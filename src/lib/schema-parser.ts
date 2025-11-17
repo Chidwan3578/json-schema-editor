@@ -1,5 +1,6 @@
 // JSON Schema parsing utilities
 
+import { JSONSchema7 } from "json-schema";
 import type { PropertyData, SchemaMetadata } from "@/types/schema";
 import { generatePropertyId } from "./id-generator";
 
@@ -11,7 +12,7 @@ export interface ParsedSchema {
 /**
  * Parse a JSON Schema into PropertyData array
  */
-export const parseSchema = (schema: any): ParsedSchema => {
+export const parseSchema = (schema: JSONSchema7): ParsedSchema => {
   const result: ParsedSchema = {
     properties: [],
   };
@@ -19,17 +20,17 @@ export const parseSchema = (schema: any): ParsedSchema => {
   // Extract metadata if present
   if (schema.title || schema.description) {
     result.metadata = {
-      title: schema.title || "",
-      description: schema.description || "",
+      title: typeof schema.title === "string" ? schema.title : "",
+      description: typeof schema.description === "string" ? schema.description : "",
       version: "1.0.0", // Default version
     };
   }
 
   // Parse properties
-  if (schema.properties) {
+  if (schema.properties && typeof schema.properties === "object") {
     result.properties = parseProperties(
       schema.properties,
-      schema.required || [],
+      Array.isArray(schema.required) ? schema.required : [],
     );
   }
 
@@ -40,57 +41,71 @@ export const parseSchema = (schema: any): ParsedSchema => {
  * Recursively parse properties from a JSON Schema
  */
 export const parseProperties = (
-  props: any,
+  props: Record<string, JSONSchema7 | boolean>,
   requiredList: string[] = [],
 ): PropertyData[] => {
   if (!props) return [];
 
-  return Object.entries(props).map(([key, propSchema]: [string, any]) => {
-    const property: PropertyData = {
-      id: generatePropertyId(),
-      key,
-      title: propSchema.title,
-      type: propSchema.type || "string",
-      description: propSchema.description,
-      required: requiredList.includes(key),
-      constraints: {},
-    };
+  return Object.entries(props)
+    .filter(([, propSchema]) => typeof propSchema === "object")
+    .map(([key, propSchema]) => {
+      const schema = propSchema as JSONSchema7;
+      
+      // Determine the type - check for file type indicators
+      let propertyType = (typeof schema.type === "string" ? schema.type : "string") as PropertyData["type"];
+      
+      // If it's a string with format filename, treat it as a file
+      if (
+        propertyType === 'string' && 
+        schema.format === 'filename'
+      ) {
+        propertyType = 'file';
+      }
+      
+      const property: PropertyData = {
+        id: generatePropertyId(),
+        key,
+        title: typeof schema.title === "string" ? schema.title : undefined,
+        type: propertyType,
+        description: typeof schema.description === "string" ? schema.description : undefined,
+        required: requiredList.includes(key),
+      };
 
     // Parse string constraints
-    if (propSchema.minLength !== undefined)
-      property.constraints.minLength = propSchema.minLength;
-    if (propSchema.maxLength !== undefined)
-      property.constraints.maxLength = propSchema.maxLength;
-    if (propSchema.pattern) property.constraints.pattern = propSchema.pattern;
-    if (propSchema.enum && Array.isArray(propSchema.enum))
-      property.constraints.enum = propSchema.enum;
+    if (schema.minLength !== undefined)
+      property.minLength = schema.minLength;
+    if (schema.maxLength !== undefined)
+      property.maxLength = schema.maxLength;
+    if (schema.pattern) property.pattern = schema.pattern;
+    if (schema.enum && Array.isArray(schema.enum))
+      property.enum = schema.enum as string[];
 
     // Parse numeric constraints
-    if (propSchema.minimum !== undefined)
-      property.constraints.minimum = propSchema.minimum;
-    if (propSchema.maximum !== undefined)
-      property.constraints.maximum = propSchema.maximum;
+    if (schema.minimum !== undefined)
+      property.minimum = schema.minimum;
+    if (schema.maximum !== undefined)
+      property.maximum = schema.maximum;
 
     // Parse array constraints
-    if (propSchema.minItems !== undefined)
-      property.constraints.minItems = propSchema.minItems;
-    if (propSchema.maxItems !== undefined)
-      property.constraints.maxItems = propSchema.maxItems;
-    if (propSchema.uniqueItems)
-      property.constraints.uniqueItems = propSchema.uniqueItems;
+    if (schema.minItems !== undefined)
+      property.minItems = schema.minItems;
+    if (schema.maxItems !== undefined)
+      property.maxItems = schema.maxItems;
+    if (schema.uniqueItems)
+      property.uniqueItems = schema.uniqueItems;
 
     // Parse array items recursively
-    if (propSchema.type === "array" && propSchema.items) {
-      property.items = parseProperties({ item: propSchema.items }, []).find(
+    if (property.type === "array" && schema.items && typeof schema.items === "object" && !Array.isArray(schema.items)) {
+      property.items = parseProperties({ item: schema.items as JSONSchema7 }, []).find(
         (p) => p.key === "item",
       );
     }
 
     // Parse object children recursively
-    if (propSchema.properties) {
+    if (schema.properties && typeof schema.properties === "object") {
       property.children = parseProperties(
-        propSchema.properties,
-        propSchema.required || [],
+        schema.properties,
+        Array.isArray(schema.required) ? schema.required : [],
       );
     }
 

@@ -10,6 +10,7 @@ import {
   Hash,
   Braces,
   CheckSquare,
+  FileText,
 } from "lucide-react";
 import {
   Tooltip,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import PropertyEditDialog from "./PropertyEditDialog";
 import type { PropertyData } from "@/types/schema";
+import { useTypeLabels } from "@/contexts/TypeLabelsContext";
 import { toSnakeCase } from "@/lib/string-utils";
 import { generatePropertyId } from "@/lib/id-generator";
 
@@ -37,6 +39,7 @@ export default function PropertyDocument({
   level = 1,
   isArrayItem = false,
 }: PropertyDocumentProps) {
+  const { getTypeLabel } = useTypeLabels();
   const [isEditing, setIsEditing] = useState(false);
   const [newChild, setNewChild] = useState<PropertyData | null>(null);
   const [isAddingChild, setIsAddingChild] = useState(false);
@@ -66,9 +69,9 @@ export default function PropertyDocument({
 
   const headingClasses =
     {
-      1: "text-2xl font-semibold",
-      2: "text-xl font-semibold",
-      3: "text-lg font-medium",
+      1: "text-2xl font-bold",
+      2: "text-base font-medium",
+      3: "text-base font-medium",
       4: "text-base font-medium",
       5: "text-sm font-medium",
       6: "text-sm font-medium",
@@ -92,7 +95,6 @@ export default function PropertyDocument({
       key: "",
       type: "string",
       required: false,
-      constraints: {},
     };
     setNewChild(child);
     setIsAddingChild(true);
@@ -142,25 +144,18 @@ export default function PropertyDocument({
     }
   };
 
-  const handleKeyBlur = () => {
-    if (editedKey !== property.key) {
-      onUpdate({ ...property, key: editedKey });
-    }
-    setIsEditingKey(false);
-  };
-
   return (
     <div className="group">
-      <div className="flex gap-4 items-start">
+      <div className="flex gap-4 items-center rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-accent/50">
         {/* Left side - Main content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-start gap-3">
             {!isArrayItem && (
               <button
                 onClick={() =>
                   onUpdate({ ...property, required: !property.required })
                 }
-                className="shrink-0 transition-all hover:scale-110"
+                className="shrink-0 transition-all hover:scale-110 mt-0.5"
                 title={
                   property.required
                     ? "Required field - click to make optional"
@@ -186,72 +181,76 @@ export default function PropertyDocument({
                 placeholder="Enter title"
               />
             ) : (
-              <div className="flex items-center gap-2">
-                <HeadingTag
-                  className={`${headingClasses} cursor-pointer hover:text-primary transition-colors`}
-                  onClick={handleTitleClick}
-                >
-                  {property.title || property.key || (
-                    <span className="text-muted-foreground italic">
-                      unnamed
-                    </span>
-                  )}
-                </HeadingTag>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        {property.type === "string" && (
-                          <Type className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        {property.type === "number" && (
-                          <Hash className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        {property.type === "integer" && (
-                          <Hash className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        {property.type === "boolean" && (
-                          <CheckSquare className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        {property.type === "object" && (
-                          <Braces className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        {property.type === "array" && (
-                          <List className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {property.type}
-                      {property.type === "array" && property.items
-                        ? ` of ${property.items.type}`
-                        : ""}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {property.type === "object" && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 h-6 w-6"
-                    onClick={addChild}
-                    data-testid={`button-add-child-${property.id}`}
+              <div className="flex gap-2 flex-wrap">
+                <div className="flex items-start gap-2">
+                  <HeadingTag
+                    className={`${headingClasses} cursor-pointer hover:text-primary transition-colors leading-none`}
+                    onClick={handleTitleClick}
                   >
-                    <Plus className="!w-5 !h-5" />
-                  </Button>
+                    {property.title || property.key || (
+                      <span className="text-muted-foreground italic">
+                        unnamed
+                      </span>
+                    )}
+                  </HeadingTag>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          {property.type === "string" && (
+                            <Type className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "number" && (
+                            <Hash className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "integer" && (
+                            <Hash className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "boolean" && (
+                            <CheckSquare className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "object" && (
+                            <Braces className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "array" && (
+                            <List className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          {property.type === "file" && (
+                            <FileText className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {getTypeLabel(property.type)}
+                        {property.type === "array" && property.items
+                          ? ` of ${getTypeLabel(property.items.type)}`
+                          : ""}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  {property.type === "object" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 h-6 w-6"
+                      onClick={addChild}
+                      data-testid={`button-add-child-${property.id}`}
+                    >
+                      <Plus className="!w-5 !h-5" />
+                    </Button>
+                  )}
+                </div>
+                {property.description && (
+                  <p
+                    className="text-sm text-muted-foreground flex-1 min-w-[200px]"
+                    data-testid={`text-description-${property.id}`}
+                  >
+                    {property.description}
+                  </p>
                 )}
               </div>
             )}
           </div>
-
-          {property.description && (
-            <p
-              className="text-sm text-muted-foreground mb-2"
-              data-testid={`text-description-${property.id}`}
-            >
-              {property.description}
-            </p>
-          )}
         </div>
 
         {/* Right side - Action buttons */}
@@ -294,8 +293,8 @@ export default function PropertyDocument({
         <div
           className={
             level === 1
-              ? "ml-6 mt-4 space-y-6 border-l-2 border-border pl-6"
-              : "ml-4 mt-3 space-y-4 border-l border-border pl-4"
+              ? "ml-6 mt-1 border-l-2 border-border pl-6"
+              : "ml-4 mt-1 border-l border-border pl-4"
           }
         >
           {property.children!.map((child) => (
@@ -315,12 +314,12 @@ export default function PropertyDocument({
         <div
           className={
             level === 1
-              ? "ml-6 mt-4 border-l-2 border-border pl-6"
-              : "ml-4 mt-3 border-l border-border pl-4"
+              ? "ml-6 mt-1 border-l-2 border-border pl-6"
+              : "ml-4 mt-1 border-l border-border pl-4"
           }
         >
           <div className="mb-2 text-xs text-muted-foreground font-semibold uppercase">
-            Array Items
+            {getTypeLabel('array')} Items
           </div>
           <PropertyDocument
             property={property.items}

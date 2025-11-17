@@ -1,12 +1,12 @@
 import React from 'react';
-import { JsonSchemaEditor } from 'json-schema-editor';
+import { JsonSchemaBuilder } from './src/index';
 
 /**
  * Example 1: Basic Usage
  */
 export function BasicExample() {
   return (
-    <JsonSchemaEditor
+    <JsonSchemaBuilder
       onSchemaChange={(schema) => {
         console.log('Schema changed:', schema);
       }}
@@ -40,7 +40,7 @@ export function InitialSchemaExample() {
   };
 
   return (
-    <JsonSchemaEditor
+    <JsonSchemaBuilder
       initialSchema={initialSchema}
       onSchemaChange={(schema) => {
         // Send to API, save to localStorage, etc.
@@ -55,7 +55,7 @@ export function InitialSchemaExample() {
  */
 export function MinimalExample() {
   return (
-    <JsonSchemaEditor
+    <JsonSchemaBuilder
       showMetadata={false}
       showImport={false}
       showClear={false}
@@ -150,7 +150,7 @@ export function ControlledExample() {
         </button>
       </div>
       
-      <JsonSchemaEditor
+      <JsonSchemaBuilder
         initialSchema={currentSchema}
         onSchemaChange={handleSchemaChange}
       />
@@ -159,4 +159,4 @@ export function ControlledExample() {
 }
 
 // Import the hook for headless example
-import { useSchemaBuilder } from 'json-schema-editor';
+import { useSchemaBuilder } from './src/index';

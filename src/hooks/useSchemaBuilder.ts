@@ -41,7 +41,6 @@ export const useSchemaBuilder = (
       key: "",
       type: "string",
       required: false,
-      constraints: {},
     };
     return property;
   };

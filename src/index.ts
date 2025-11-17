@@ -1,11 +1,14 @@
 /**
  * @packageDocumentation
- * JSON Schema Editor - A React component library for building JSON schemas visually
+ * JSON Schema Builder - A React component library for building JSON schemas visually
  */
 
 // Main component
-export { JsonSchemaEditor } from "./components/JsonSchemaEditor";
-export type { JsonSchemaEditorProps } from "./components/JsonSchemaEditor";
+export { JsonSchemaBuilder } from "./components/JsonSchemaBuilder";
+export type { JsonSchemaBuilderProps } from "./components/JsonSchemaBuilder";
+
+// Context types
+export type { TypeLabels } from "./contexts/TypeLabelsContext";
 
 // Hooks for headless usage
 export { useSchemaBuilder } from "./hooks/useSchemaBuilder";
@@ -21,7 +24,6 @@ export { downloadJsonFile, importJsonFile } from "./lib/file-utils";
 export type {
   PropertyData,
   PropertyType,
-  PropertyConstraints,
   SchemaMetadata,
 } from "./types/schema";
 

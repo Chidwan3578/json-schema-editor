@@ -53,7 +53,7 @@ export const usePropertyEditor = (
   const handleConstraintChange = (field: string, value: any) => {
     onUpdate({
       ...property,
-      constraints: { ...property.constraints, [field]: value },
+      [field]: value,
     });
   };
 
