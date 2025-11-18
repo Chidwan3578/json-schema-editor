@@ -6,14 +6,13 @@ A beautiful, interactive React component for building and editing JSON schemas v
 
 ## Features
 
-- 🎨 **Visual Editor** - Build JSON schemas with an intuitive drag-and-drop interface
+- 🎨 **Visual Editor** - Build JSON schemas with an intuitive interface
 - 📝 **Full JSON Schema Support** - Support for all JSON Schema types and constraints
 - 🎯 **Type-Safe** - Written in TypeScript with full type definitions
-- ✅ **Official JSON Schema Types** - Uses `@types/json-schema` for spec compliance
+- ✅ **Controlled Component** - Full control over state management
 - 🎨 **Customizable** - Flexible API with extensive customization options
-- 📦 **Headless Options** - Use just the hooks and utilities without UI
 - 🌗 **Theme Support** - Built-in dark mode support
-- ⚡ **Lightweight** - Tree-shakeable with minimal bundle size impact
+- ⚡ **Lightweight** - Minimal bundle size with focused API
 
 ## Installation
 
@@ -84,16 +83,20 @@ Add to your main CSS file (e.g., `src/index.css`):
 ### Basic Example
 
 ```tsx
+import { useState } from 'react';
 import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
 function App() {
-  const handleSchemaChange = (schema) => {
-    console.log('Schema updated:', schema);
-  };
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
 
   return (
     <JsonSchemaBuilder 
-      onSchemaChange={handleSchemaChange}
+      schema={schema}
+      onChange={setSchema}
     />
   );
 }
@@ -102,24 +105,35 @@ function App() {
 ### With Initial Schema
 
 ```tsx
+import { useState } from 'react';
 import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
-const initialSchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    age: { type: 'number' }
-  },
-  required: ['name']
-};
-
 function App() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    title: 'User Profile',
+    properties: {
+      name: { 
+        type: 'string',
+        minLength: 2,
+        maxLength: 50
+      },
+      age: { 
+        type: 'integer',
+        minimum: 0,
+        maximum: 120
+      }
+    },
+    required: ['name']
+  });
+
   return (
     <JsonSchemaBuilder 
-      initialSchema={initialSchema}
-      onSchemaChange={(schema) => {
+      schema={schema}
+      onChange={(newSchema) => {
+        setSchema(newSchema);
         // Save to backend, localStorage, etc.
-        console.log(schema);
+        localStorage.setItem('schema', JSON.stringify(newSchema));
       }}
     />
   );
@@ -129,14 +143,21 @@ function App() {
 ### Customized Layout
 
 ```tsx
+import { useState } from 'react';
 import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
 function App() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
+
   return (
     <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
       showMetadata={true}
-      showImport={false}
-      showClear={true}
       showOutput={true}
       className="h-[600px]"
       typeLabels={{
@@ -145,7 +166,68 @@ function App() {
         object: 'Form',
         array: 'List',
       }}
+      propertyLabel={{
+        singular: 'field',
+        plural: 'fields'
+      }}
     />
+  );
+}
+```
+
+### With Undo/Redo
+
+Since the component is fully controlled, you can implement undo/redo easily:
+
+```tsx
+import { useState } from 'react';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
+
+function App() {
+  const [history, setHistory] = useState([{
+    type: 'object',
+    properties: {},
+    required: []
+  }]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const currentSchema = history[currentIndex];
+
+  const handleChange = (newSchema) => {
+    const newHistory = history.slice(0, currentIndex + 1);
+    newHistory.push(newSchema);
+    setHistory(newHistory);
+    setCurrentIndex(currentIndex + 1);
+  };
+
+  const undo = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const redo = () => {
+    if (currentIndex < history.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  return (
+    <div>
+      <div className="toolbar">
+        <button onClick={undo} disabled={currentIndex === 0}>
+          Undo
+        </button>
+        <button onClick={redo} disabled={currentIndex === history.length - 1}>
+          Redo
+        </button>
+      </div>
+      
+      <JsonSchemaBuilder
+        schema={currentSchema}
+        onChange={handleChange}
+      />
+    </div>
   );
 }
 ```
@@ -156,22 +238,25 @@ function App() {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `initialSchema` | `object` | `undefined` | Initial JSON schema to load |
-| `onSchemaChange` | `(schema: any) => void` | `undefined` | Callback when schema changes |
-| `showMetadata` | `boolean` | `true` | Show metadata fields (title, description, version) |
+| `schema` | `object` | **Required** | The JSON schema object (controlled) |
+| `onChange` | `(schema: any) => void` | **Required** | Callback when schema changes |
+| `showMetadata` | `boolean` | `false` | Show metadata fields (title, description, version) |
 | `showImport` | `boolean` | `true` | Show import button |
 | `showClear` | `boolean` | `true` | Show clear all button |
 | `showOutput` | `boolean` | `true` | Show JSON output panel |
-| `headerContent` | `ReactNode` | `undefined` | Custom header content |
+| `showHeader` | `boolean` | `true` | Show header with action buttons |
+| `showSummary` | `boolean` | `false` | Show summary at bottom |
+| `showRegex` | `boolean` | `false` | Show regex pattern field for strings |
 | `className` | `string` | `"h-screen"` | Custom className for container |
-| `typeLabels` | `TypeLabels` | Default labels | Custom labels for property types (e.g., `{ string: 'Text', boolean: 'Yes/No' }`) |
-| `propertyLabel` | `{ singular: string, plural: string }` | `{ singular: 'property', plural: 'properties' }` | Custom labels for top-level properties (e.g., `{ singular: 'input', plural: 'inputs' }`) |
+| `typeLabels` | `TypeLabels` | Default labels | Custom labels for property types |
+| `propertyLabel` | `{ singular: string, plural: string }` | `{ singular: 'property', plural: 'properties' }` | Custom labels for properties |
 
 ### Customizing Type Labels
 
 You can customize how property types are displayed to your users:
 
 ```tsx
+import { useState } from 'react';
 import { JsonSchemaBuilder } from 'json-schema-builder-react';
 import type { TypeLabels } from 'json-schema-builder-react';
 
@@ -186,10 +271,17 @@ const customLabels: TypeLabels = {
 };
 
 function App() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
+
   return (
     <JsonSchemaBuilder 
+      schema={schema}
+      onChange={setSchema}
       typeLabels={customLabels}
-      onSchemaChange={(schema) => console.log(schema)}
     />
   );
 }
@@ -209,132 +301,55 @@ This affects:
 - `array` - Default: "Array"
 - `null` - Default: "Null"
 
-## Headless Usage
-
-Use just the hooks and utilities without the UI components:
-
-```tsx
-import { useSchemaBuilder, generateSchema } from 'json-schema-builder-react';
-
-function MyCustomEditor() {
-  const {
-    properties,
-    metadata,
-    schema,
-    addProperty,
-    updateProperty,
-    deleteProperty,
-  } = useSchemaBuilder(true);
-
-  return (
-    <div>
-      {/* Build your own custom UI */}
-      <button onClick={() => {
-        const newProp = addProperty();
-        updateProperty(newProp.id, {
-          ...newProp,
-          key: 'myProperty',
-          type: 'string'
-        });
-      }}>
-        Add Property
-      </button>
-      
-      <pre>{JSON.stringify(schema, null, 2)}</pre>
-    </div>
-  );
-}
-```
-
 ## Available Exports
 
-### Components
-- `JsonSchemaBuilder` - Main builder component
-- `PropertyDocument` - Individual property card
-- `PropertyEditDialog` - Property edit modal
-- `JsonOutput` - JSON output display
-- `SchemaMetadataComponent` - Schema metadata fields
-
-### Hooks
-- `useSchemaBuilder` - Main schema builder logic
-- `usePropertyEditor` - Property editing logic
-
-### Utilities
-- `generateSchema` - Generate JSON schema from properties
-- `parseSchema` - Parse JSON schema into properties
-- `downloadJsonFile` - Download schema as JSON file
-- `importJsonFile` - Import schema from file
+### Component
+- `JsonSchemaBuilder` - Main builder component (controlled)
 
 ### Types
-- `PropertyData` - Internal UI representation of a JSON Schema property (extends JSON Schema fields)
-- `PropertyType` - JSON Schema type names (from `@types/json-schema`)
-- `SchemaMetadata` - Schema metadata structure
-- `JSONSchema7` - Official JSON Schema Draft 7 type (from `@types/json-schema`)
-- `JSONSchema7TypeName` - JSON Schema type names (from `@types/json-schema`)
+- `JsonSchemaBuilderProps` - Props for the main component
+- `TypeLabels` - Type for customizing property type labels
 
-**Note**: This library uses official JSON Schema types from `@types/json-schema` to ensure compatibility with the JSON Schema specification.
+## Advanced Usage
 
-## Examples
+### Integration with State Management
 
-### Using Individual Components
+The controlled component pattern makes it easy to integrate with any state management solution:
 
+#### Redux
 ```tsx
-import { 
-  PropertyDocument, 
-  useSchemaBuilder 
-} from 'json-schema-builder-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
+import { updateSchema } from './schemaSlice';
 
-function CustomEditor() {
-  const { properties, updateProperty, deleteProperty } = useSchemaBuilder();
+function App() {
+  const schema = useSelector(state => state.schema);
+  const dispatch = useDispatch();
 
   return (
-    <div>
-      {properties.map(property => (
-        <PropertyDocument
-          key={property.id}
-          property={property}
-          onUpdate={(updated) => updateProperty(property.id, updated)}
-          onDelete={() => deleteProperty(property.id)}
-        />
-      ))}
-    </div>
+    <JsonSchemaBuilder
+      schema={schema}
+      onChange={(newSchema) => dispatch(updateSchema(newSchema))}
+    />
   );
 }
 ```
 
-### Programmatic Schema Generation
-
+#### Zustand
 ```tsx
-import { generateSchema } from 'json-schema-builder-react';
-import type { PropertyData } from 'json-schema-builder-react';
+import { useSchemaStore } from './store';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
 
-const properties: PropertyData[] = [
-  {
-    id: '1',
-    key: 'username',
-    type: 'string',
-    required: true,
-    constraints: {
-      minLength: 3,
-      maxLength: 20
-    }
-  },
-  {
-    id: '2',
-    key: 'email',
-    type: 'string',
-    required: true,
-    constraints: {
-      pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
-    }
-  }
-];
+function App() {
+  const { schema, setSchema } = useSchemaStore();
 
-const schema = generateSchema(
-  properties,
-  { title: 'User Schema', description: 'User registration', version: '1.0.0' },
-  true
-);
+  return (
+    <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
+    />
+  );
+}
 ```
 
 ## Development
