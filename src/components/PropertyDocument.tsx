@@ -61,7 +61,7 @@ export default function PropertyDocument({
 
   const headingClasses =
     {
-      1: "text-xl",
+      1: "text-lg font-semibold",
       2: "text-base",
       3: "text-base",
       4: "text-base",
@@ -178,7 +178,7 @@ export default function PropertyDocument({
               <div className="flex gap-2 flex-wrap">
                 <div className="flex items-start gap-2">
                   <HeadingTag
-                    className={`${headingClasses} font-medium cursor-pointer hover:text-primary transition-colors leading-none`}
+                    className={`${headingClasses} cursor-pointer hover:text-primary transition-colors leading-none`}
                     onClick={handleTitleClick}
                   >
                     {property.title || property.key || (

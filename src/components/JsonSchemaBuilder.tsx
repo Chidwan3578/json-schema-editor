@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Trash2 } from "lucide-react";
 import PropertyDocument from "@/components/PropertyDocument";
@@ -18,14 +18,14 @@ import {
 
 export interface JsonSchemaBuilderProps {
   /**
-   * Initial schema to load into the builder
+   * The JSON schema object (controlled)
    */
-  initialSchema?: any;
+  schema: any;
 
   /**
    * Callback fired when the schema changes
    */
-  onSchemaChange?: (schema: any) => void;
+  onChange: (schema: any) => void;
 
   /**
    * Whether to show metadata fields (title, description, version)
@@ -91,14 +91,14 @@ export interface JsonSchemaBuilderProps {
  * A visual JSON Schema builder component that allows building JSON schemas interactively
  */
 export function JsonSchemaBuilder({
-  initialSchema,
-  onSchemaChange,
+  schema,
+  onChange,
   showMetadata = false,
   showImport = true,
   showClear = true,
   showOutput = true,
   showHeader = true,
-  className = "h-screen",
+  className = "",
   showSummary = false,
   typeLabels,
   propertyLabel = { singular: "property", plural: "properties" },
@@ -110,32 +110,17 @@ export function JsonSchemaBuilder({
   const {
     properties,
     metadata,
-    schema,
     addProperty: createProperty,
     updateProperty,
     deleteProperty,
     clearAll: clearAllProperties,
     updateMetadata,
     importSchema,
-    loadSchema,
-  } = useSchemaBuilder(showMetadata);
-
-  // Notify parent component of schema changes
-  useEffect(() => {
-    if (onSchemaChange) {
-      onSchemaChange(schema);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schema]);
-
-  // Load initial schema if provided
-  useEffect(() => {
-    if (initialSchema) {
-      loadSchema(initialSchema);
-    }
-    // Only run on mount or when initialSchema changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSchema]);
+  } = useSchemaBuilder({
+    schema,
+    onChange,
+    includeMetadata: showMetadata,
+  });
 
   const addProperty = () => {
     const property = createProperty();
@@ -164,7 +149,7 @@ export function JsonSchemaBuilder({
 
   return (
     <TypeLabelsProvider customLabels={typeLabels}>
-      <div className={`${className} flex flex-col`}>
+      <div className={`${className} flex flex-col json-schema-builder-react`}>
         {showHeader && (
           <header className="h-16 border-b flex items-center justify-between px-6">
             <div className="flex items-center gap-3">
@@ -196,7 +181,7 @@ export function JsonSchemaBuilder({
 
         <div className="flex-1 flex overflow-hidden">
           <div className={showOutput ? "w-3/5 border-r" : "w-full"}>
-            <div className="h-full overflow-auto p-6 space-y-4">
+            <div className="h-full overflow-auto p-2 space-y-4">
               {showMetadata && (
                 <SchemaMetadata
                   title={metadata.title}

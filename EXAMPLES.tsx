@@ -1,14 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { JsonSchemaBuilder } from './src/index';
 
 /**
  * Example 1: Basic Usage
  */
 export function BasicExample() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
+
   return (
     <JsonSchemaBuilder
-      onSchemaChange={(schema) => {
-        console.log('Schema changed:', schema);
+      schema={schema}
+      onChange={(newSchema) => {
+        setSchema(newSchema);
+        console.log('Schema changed:', newSchema);
       }}
     />
   );
@@ -18,7 +26,7 @@ export function BasicExample() {
  * Example 2: With Initial Schema
  */
 export function InitialSchemaExample() {
-  const initialSchema = {
+  const [schema, setSchema] = useState({
     type: 'object',
     title: 'User Profile',
     properties: {
@@ -37,14 +45,15 @@ export function InitialSchemaExample() {
       }
     },
     required: ['username', 'email']
-  };
+  });
 
   return (
     <JsonSchemaBuilder
-      initialSchema={initialSchema}
-      onSchemaChange={(schema) => {
+      schema={schema}
+      onChange={(newSchema) => {
+        setSchema(newSchema);
         // Send to API, save to localStorage, etc.
-        localStorage.setItem('mySchema', JSON.stringify(schema));
+        localStorage.setItem('mySchema', JSON.stringify(newSchema));
       }}
     />
   );
@@ -54,8 +63,16 @@ export function InitialSchemaExample() {
  * Example 3: Minimal UI
  */
 export function MinimalExample() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
+
   return (
     <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
       showMetadata={false}
       showImport={false}
       showClear={false}
@@ -64,77 +81,35 @@ export function MinimalExample() {
   );
 }
 
-
 /**
- * Example 5: Headless Usage (Custom UI)
+ * Example 4: Controlled with Undo/Redo
  */
-export function HeadlessExample() {
-  const {
-    properties,
-    schema,
-    addProperty,
-    updateProperty,
-    deleteProperty
-  } = useSchemaBuilder();
+export function UndoRedoExample() {
+  const [history, setHistory] = useState([{
+    type: 'object',
+    properties: {},
+    required: []
+  }]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  return (
-    <div className="p-4">
-      <h2>Custom Schema Builder</h2>
-      
-      <button
-        onClick={() => {
-          const prop = addProperty();
-          updateProperty(prop.id, {
-            ...prop,
-            key: 'newProperty',
-            type: 'string',
-            required: false
-          });
-        }}
-        className="mb-4 px-4 py-2 bg-green-500 text-white rounded"
-      >
-        Add Property
-      </button>
+  const currentSchema = history[currentIndex];
 
-      <div className="space-y-2">
-        {properties.map(prop => (
-          <div key={prop.id} className="flex items-center gap-2 p-2 border rounded">
-            <span className="font-medium">{prop.key || 'Unnamed'}</span>
-            <span className="text-sm text-gray-500">{prop.type}</span>
-            <button
-              onClick={() => deleteProperty(prop.id)}
-              className="ml-auto text-red-500"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <pre className="mt-4 p-4 bg-gray-100 rounded overflow-auto">
-        {JSON.stringify(schema, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
-/**
- * Example 6: Controlled Component
- */
-export function ControlledExample() {
-  const [currentSchema, setCurrentSchema] = React.useState<any>(null);
-  const [history, setHistory] = React.useState<any[]>([]);
-
-  const handleSchemaChange = (schema: any) => {
-    setCurrentSchema(schema);
-    setHistory(prev => [...prev, schema].slice(-10)); // Keep last 10 versions
+  const handleSchemaChange = (newSchema: any) => {
+    const newHistory = history.slice(0, currentIndex + 1);
+    newHistory.push(newSchema);
+    setHistory(newHistory);
+    setCurrentIndex(currentIndex + 1);
   };
 
   const undo = () => {
-    if (history.length > 1) {
-      const previous = history[history.length - 2];
-      setCurrentSchema(previous);
-      setHistory(prev => prev.slice(0, -1));
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const redo = () => {
+    if (currentIndex < history.length - 1) {
+      setCurrentIndex(currentIndex + 1);
     }
   };
 
@@ -143,20 +118,27 @@ export function ControlledExample() {
       <div className="mb-4 flex gap-2">
         <button
           onClick={undo}
-          disabled={history.length <= 1}
+          disabled={currentIndex === 0}
           className="px-4 py-2 bg-gray-500 text-white rounded disabled:opacity-50"
         >
-          Undo ({history.length} changes)
+          Undo
         </button>
+        <button
+          onClick={redo}
+          disabled={currentIndex === history.length - 1}
+          className="px-4 py-2 bg-gray-500 text-white rounded disabled:opacity-50"
+        >
+          Redo
+        </button>
+        <span className="px-4 py-2 text-gray-600">
+          {currentIndex + 1} / {history.length}
+        </span>
       </div>
       
       <JsonSchemaBuilder
-        initialSchema={currentSchema}
-        onSchemaChange={handleSchemaChange}
+        schema={currentSchema}
+        onChange={handleSchemaChange}
       />
     </div>
   );
 }
-
-// Import the hook for headless example
-import { useSchemaBuilder } from './src/index';

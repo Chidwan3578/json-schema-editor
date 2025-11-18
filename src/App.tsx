@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { JsonSchemaBuilder } from "@/components/JsonSchemaBuilder";
 import NotFound from "@/pages/not-found";
 
 function SchemaBuilderPage() {
+  const [schema, setSchema] = useState({
+    type: "object",
+  });
+
   return (
     <div className="h-screen flex flex-col">
       {/* Quick Instructions */}
@@ -20,9 +25,10 @@ function SchemaBuilderPage() {
 
       <div className="flex-1 overflow-hidden">
         <JsonSchemaBuilder
-          initialSchema={{}}
-          onSchemaChange={(schema) => {
-            console.log("Schema changed:", schema);
+          schema={schema}
+          onChange={(newSchema) => {
+            setSchema(newSchema);
+            console.log("Schema changed:", newSchema);
           }}
           showMetadata={true}
           propertyLabel={{ singular: "input", plural: "inputs" }}
