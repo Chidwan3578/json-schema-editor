@@ -4,7 +4,11 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "./dist-lib",
-    "noEmit": false
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "incremental": false
   },
   "include": ["src/**/*"],
   "exclude": [
