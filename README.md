@@ -232,6 +232,38 @@ function App() {
 }
 ```
 
+### Editable Property Keys (Advanced)
+
+By default, property keys are **immutable after creation** to prevent breaking existing references in your codebase. However, you can enable key editing with the `keyEditable` prop:
+
+```tsx
+import { useState } from 'react';
+import { JsonSchemaBuilder } from 'json-schema-builder-react';
+
+function App() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {
+      user_name: {
+        type: 'string',
+        title: 'User Name'
+      }
+    },
+    required: []
+  });
+
+  return (
+    <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
+      keyEditable={true} // ⚠️ Allows changing keys after creation
+    />
+  );
+}
+```
+
+**⚠️ Warning:** Enabling `keyEditable` allows users to change property keys even after they've been created. This can break existing code that references these keys. Use with caution, primarily in development environments or when you have proper migration strategies in place.
+
 ## API Reference
 
 ### JsonSchemaBuilder Props
@@ -247,6 +279,7 @@ function App() {
 | `showHeader` | `boolean` | `true` | Show header with action buttons |
 | `showSummary` | `boolean` | `false` | Show summary at bottom |
 | `showRegex` | `boolean` | `false` | Show regex pattern field for strings |
+| `keyEditable` | `boolean` | `false` | Allow editing property keys after initialization (⚠️ may break references) |
 | `className` | `string` | `"h-screen"` | Custom className for container |
 | `typeLabels` | `TypeLabels` | Default labels | Custom labels for property types |
 | `propertyLabel` | `{ singular: string, plural: string }` | `{ singular: 'property', plural: 'properties' }` | Custom labels for properties |

@@ -31,6 +31,7 @@ interface PropertyEditDialogProps {
   isNewProperty?: boolean;
   propertyLabel?: { singular: string; plural: string };
   showRegex?: boolean;
+  keyEditable?: boolean;
 }
 
 export default function PropertyEditDialog({
@@ -42,6 +43,7 @@ export default function PropertyEditDialog({
   isNewProperty = false,
   propertyLabel = { singular: "Property", plural: "Properties" },
   showRegex = false,
+  keyEditable = false,
 }: PropertyEditDialogProps) {
   const { typeLabels } = useTypeLabels();
 
@@ -61,7 +63,7 @@ export default function PropertyEditDialog({
     handleKeyChange,
     handleFieldChange,
     handleConstraintChange,
-  } = usePropertyEditor(localProperty, setLocalProperty, isNewProperty);
+  } = usePropertyEditor(localProperty, setLocalProperty, isNewProperty, keyEditable);
 
   const handleSave = () => {
     if (localProperty.title?.trim()) {
@@ -137,8 +139,8 @@ export default function PropertyEditDialog({
             )}
           </div>
 
-          {/* 3. Property Key - Only shown for new properties */}
-          {isNewProperty && (
+          {/* 3. Property Key - Shown for new properties or when keyEditable is true */}
+          {(isNewProperty || keyEditable) && (
             <div className="space-y-2">
               <Label>Key</Label>
               <Input
@@ -147,6 +149,11 @@ export default function PropertyEditDialog({
                 placeholder="property_key"
                 data-testid="input-key-dialog"
               />
+              {!isNewProperty && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                  ⚠️ Changing the key may break existing references to this property
+                </p>
+              )}
             </div>
           )}
 

@@ -142,3 +142,58 @@ export function UndoRedoExample() {
     </div>
   );
 }
+
+/**
+ * Example 5: Custom Type Labels
+ */
+export function CustomLabelsExample() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {},
+    required: []
+  });
+
+  return (
+    <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
+      typeLabels={{
+        string: 'Text',
+        boolean: 'Yes/No',
+        object: 'Form',
+        array: 'List',
+      }}
+      propertyLabel={{
+        singular: 'field',
+        plural: 'fields'
+      }}
+    />
+  );
+}
+
+/**
+ * Example 6: Allow Editing Property Keys
+ * By default, property keys are immutable after creation to prevent breaking references.
+ * Set keyEditable={true} to allow changing keys even after initialization.
+ */
+export function EditableKeysExample() {
+  const [schema, setSchema] = useState({
+    type: 'object',
+    properties: {
+      old_key: {
+        type: 'string',
+        title: 'Example Field'
+      }
+    },
+    required: []
+  });
+
+  return (
+    <JsonSchemaBuilder
+      schema={schema}
+      onChange={setSchema}
+      keyEditable={true} // Allows editing property keys after creation
+      showMetadata={false}
+    />
+  );
+}

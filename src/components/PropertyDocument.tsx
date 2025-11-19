@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,10 +18,20 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import PropertyEditDialog from "./PropertyEditDialog";
-import type { PropertyData } from "@/types/schema";
+import type { PropertyData, PropertyType } from "@/types/schema";
 import { useTypeLabels } from "@/contexts/TypeLabelsContext";
-import { generatePropertyId } from "@/lib/id-generator";
+import { useInlineEditor } from "@/hooks/useInlineEditor";
+import { useTypeSelector } from "@/hooks/useTypeSelector";
+import { useChildManager } from "@/hooks/useChildManager";
+import { useDialogManager } from "@/hooks/useDialogManager";
 
 interface PropertyDocumentProps {
   property: PropertyData;
@@ -30,6 +40,7 @@ interface PropertyDocumentProps {
   level?: number;
   isArrayItem?: boolean;
   showRegex?: boolean;
+  keyEditable?: boolean;
 }
 
 export default function PropertyDocument({
@@ -39,20 +50,32 @@ export default function PropertyDocument({
   level = 1,
   isArrayItem = false,
   showRegex = false,
+  keyEditable = false,
 }: PropertyDocumentProps) {
-  const { getTypeLabel } = useTypeLabels();
-  const [isEditing, setIsEditing] = useState(false);
-  const [newChild, setNewChild] = useState<PropertyData | null>(null);
-  const [isAddingChild, setIsAddingChild] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(property.title || "");
+  const { getTypeLabel, typeLabels } = useTypeLabels();
 
-  // Keep editedTitle in sync with property.title
-  useEffect(() => {
-    if (!isEditingTitle) {
-      setEditedTitle(property.title || "");
-    }
-  }, [property.title, isEditingTitle]);
+  // Dialog for editing this property
+  const editDialog = useDialogManager<PropertyData>();
+
+  // Inline editing for title
+  const titleEditor = useInlineEditor(
+    property.title || property.key || "",
+    (newValue) => onUpdate({ ...property, title: newValue }),
+    { allowEmpty: false },
+  );
+
+  // Inline editing for description
+  const descriptionEditor = useInlineEditor(
+    property.description || "",
+    (newValue) => onUpdate({ ...property, description: newValue || undefined }),
+    { allowEmpty: true },
+  );
+
+  // Type selection with constraint cleanup
+  const typeSelector = useTypeSelector(property, onUpdate);
+
+  // Child property management
+  const childManager = useChildManager(property, onUpdate);
 
   const HeadingTag = `h${Math.min(level, 6)}` as keyof JSX.IntrinsicElements;
   const canHaveChildren = property.type === "object";
@@ -68,75 +91,6 @@ export default function PropertyDocument({
       5: "text-sm",
       6: "text-sm",
     }[level] || "text-sm";
-
-  const updateChild = (childId: string, updated: PropertyData) => {
-    const newChildren = property.children!.map((c) =>
-      c.id === childId ? updated : c,
-    );
-    onUpdate({ ...property, children: newChildren });
-  };
-
-  const deleteChild = (childId: string) => {
-    const newChildren = property.children!.filter((c) => c.id !== childId);
-    onUpdate({ ...property, children: newChildren });
-  };
-
-  const addChild = () => {
-    const child: PropertyData = {
-      id: generatePropertyId(),
-      key: "",
-      type: "string",
-      required: false,
-    };
-    setNewChild(child);
-    setIsAddingChild(true);
-  };
-
-  const confirmAddChild = (child: PropertyData) => {
-    onUpdate({
-      ...property,
-      children: [...(property.children || []), child],
-    });
-    setIsAddingChild(false);
-    setNewChild(null);
-  };
-
-  const cancelAddChild = () => {
-    setIsAddingChild(false);
-    setNewChild(null);
-  };
-
-  const handleTitleClick = () => {
-    const currentTitle = property.title || property.key || "";
-    setEditedTitle(currentTitle);
-    setIsEditingTitle(true);
-  };
-
-  const handleTitleBlur = () => {
-    const trimmedTitle = editedTitle.trim();
-
-    // Don't allow empty title - revert to original if empty
-    if (!trimmedTitle) {
-      setEditedTitle(property.title || "");
-      setIsEditingTitle(false);
-      return;
-    }
-
-    if (trimmedTitle !== property.title) {
-      // Only update title, never change the key after creation
-      onUpdate({ ...property, title: trimmedTitle });
-    }
-    setIsEditingTitle(false);
-  };
-
-  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleTitleBlur();
-    } else if (e.key === "Escape") {
-      setEditedTitle(property.title || "");
-      setIsEditingTitle(false);
-    }
-  };
 
   return (
     <div className="group">
@@ -164,22 +118,22 @@ export default function PropertyDocument({
               </button>
             )}
 
-            {isEditingTitle ? (
+            {titleEditor.isEditing ? (
               <Input
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onBlur={handleTitleBlur}
-                onKeyDown={handleTitleKeyDown}
+                value={titleEditor.value}
+                onChange={(e) => titleEditor.handleChange(e.target.value)}
+                onBlur={titleEditor.handleBlur}
+                onKeyDown={titleEditor.handleKeyDown}
                 autoFocus
                 className={headingClasses}
                 placeholder="Enter title"
               />
             ) : (
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap flex-1">
                 <div className="flex items-start gap-2">
                   <HeadingTag
                     className={`${headingClasses} cursor-pointer hover:text-primary transition-colors leading-none`}
-                    onClick={handleTitleClick}
+                    onClick={titleEditor.startEdit}
                   >
                     {property.title || property.key || (
                       <span className="text-muted-foreground italic">
@@ -187,61 +141,115 @@ export default function PropertyDocument({
                       </span>
                     )}
                   </HeadingTag>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          {property.type === "string" && (
-                            <Type className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "number" && (
-                            <Hash className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "integer" && (
-                            <Hash className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "boolean" && (
-                            <CheckSquare className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "object" && (
-                            <Braces className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "array" && (
-                            <List className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          {property.type === "file" && (
-                            <FileText className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {getTypeLabel(property.type)}
-                        {property.type === "array" && property.items
-                          ? ` of ${getTypeLabel(property.items.type)}`
-                          : ""}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  {typeSelector.isChangingType ? (
+                    <Select
+                      value={property.type}
+                      onValueChange={(value) =>
+                        typeSelector.handleTypeChange(value as PropertyType)
+                      }
+                      open={typeSelector.isChangingType}
+                      onOpenChange={typeSelector.setIsChangingType}
+                    >
+                      <SelectTrigger className="w-[140px] h-7">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {typeSelector.availableTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {typeLabels[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => typeSelector.setIsChangingType(true)}
+                            className="cursor-pointer hover:bg-accent rounded p-0.5 transition-colors"
+                          >
+                            {property.type === "string" && (
+                              <Type className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "number" && (
+                              <Hash className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "integer" && (
+                              <Hash className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "boolean" && (
+                              <CheckSquare className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "object" && (
+                              <Braces className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "array" && (
+                              <List className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            {property.type === "file" && (
+                              <FileText className="w-5 h-5 text-muted-foreground" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {getTypeLabel(property.type)}
+                          {property.type === "array" && property.items
+                            ? ` of ${getTypeLabel(property.items.type)}`
+                            : ""}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Click to change type
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   {property.type === "object" && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="opacity-0 group-hover:opacity-100 h-6 w-6"
-                      onClick={addChild}
+                      onClick={childManager.addChild}
                       data-testid={`button-add-child-${property.id}`}
                     >
                       <Plus className="!w-5 !h-5" />
                     </Button>
                   )}
                 </div>
-                {property.description && (
-                  <p
-                    className="text-sm text-muted-foreground flex-1 min-w-[200px]"
-                    data-testid={`text-description-${property.id}`}
-                  >
-                    {property.description}
-                  </p>
-                )}
+                <div className="flex-1">
+                  {descriptionEditor.isEditing ? (
+                    <Input
+                      value={descriptionEditor.value}
+                      onChange={(e) =>
+                        descriptionEditor.handleChange(e.target.value)
+                      }
+                      onBlur={descriptionEditor.handleBlur}
+                      onKeyDown={descriptionEditor.handleKeyDown}
+                      autoFocus
+                      className="text-sm flex-1"
+                      placeholder="Enter description"
+                    />
+                  ) : (
+                    <>
+                      {property.description ? (
+                        <p
+                          className="text-sm text-muted-foreground flex-1 min-w-[200px] cursor-pointer hover:text-foreground transition-colors"
+                          data-testid={`text-description-${property.id}`}
+                          onClick={descriptionEditor.startEdit}
+                        >
+                          {property.description}
+                        </p>
+                      ) : (
+                        <p
+                          className="text-sm text-muted-foreground/50 flex-1 min-w-[200px] cursor-pointer hover:text-muted-foreground italic transition-colors"
+                          onClick={descriptionEditor.startEdit}
+                        >
+                          Add description...
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -253,7 +261,7 @@ export default function PropertyDocument({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => setIsEditing(true)}
+            onClick={() => editDialog.open(property)}
             data-testid={`button-edit-${property.id}`}
           >
             <Pencil className="w-3 h-3" />
@@ -264,7 +272,7 @@ export default function PropertyDocument({
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={addChild}
+              onClick={childManager.addChild}
               data-testid={`button-add-child-${property.id}`}
             >
               <Plus className="w-3 h-3" />
@@ -295,10 +303,13 @@ export default function PropertyDocument({
             <PropertyDocument
               key={child.id}
               property={child}
-              onUpdate={(updated) => updateChild(child.id, updated)}
-              onDelete={() => deleteChild(child.id)}
+              onUpdate={(updated) =>
+                childManager.updateChild(child.id, updated)
+              }
+              onDelete={() => childManager.deleteChild(child.id)}
               level={level + 1}
               showRegex={showRegex}
+              keyEditable={keyEditable}
             />
           ))}
         </div>
@@ -323,34 +334,37 @@ export default function PropertyDocument({
             level={level + 1}
             isArrayItem={true}
             showRegex={showRegex}
+            keyEditable={keyEditable}
           />
         </div>
       )}
 
       <PropertyEditDialog
-        property={property}
-        open={isEditing}
-        onOpenChange={setIsEditing}
-        onUpdate={onUpdate}
+        property={editDialog.data || property}
+        open={editDialog.isOpen}
+        onOpenChange={editDialog.setIsOpen}
+        onUpdate={(updated) => {
+          onUpdate(updated);
+          editDialog.close();
+        }}
         isArrayItem={isArrayItem}
         isNewProperty={false}
         showRegex={showRegex}
+        keyEditable={keyEditable}
       />
 
-      {isAddingChild && newChild && (
-        <PropertyEditDialog
-          property={newChild}
-          open={isAddingChild}
-          isNewProperty={true}
-          onOpenChange={(open) => {
-            if (!open) {
-              cancelAddChild();
-            }
-          }}
-          onUpdate={confirmAddChild}
-          showRegex={showRegex}
-        />
-      )}
+      {childManager.addChildDialog.isOpen &&
+        childManager.addChildDialog.data && (
+          <PropertyEditDialog
+            property={childManager.addChildDialog.data}
+            open={childManager.addChildDialog.isOpen}
+            isNewProperty={true}
+            onOpenChange={childManager.addChildDialog.setIsOpen}
+            onUpdate={childManager.addChildDialog.confirm}
+            showRegex={showRegex}
+            keyEditable={keyEditable}
+          />
+        )}
     </div>
   );
 }

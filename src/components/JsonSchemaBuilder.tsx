@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Trash2 } from "lucide-react";
 import PropertyDocument from "@/components/PropertyDocument";
@@ -10,6 +9,7 @@ import type {
   SchemaMetadata as SchemaMetadataType,
 } from "@/types/schema";
 import { useSchemaBuilder } from "@/hooks/useSchemaBuilder";
+import { useDialogManager } from "@/hooks/useDialogManager";
 import ThemeToggle from "./ThemeToggle";
 import {
   TypeLabelsProvider,
@@ -85,6 +85,12 @@ export interface JsonSchemaBuilderProps {
    * @default false
    */
   showRegex?: boolean;
+
+  /**
+   * Whether to allow editing property keys after initialization
+   * @default false
+   */
+  keyEditable?: boolean;
 }
 
 /**
@@ -103,10 +109,8 @@ export function JsonSchemaBuilder({
   typeLabels,
   propertyLabel = { singular: "property", plural: "properties" },
   showRegex = false,
+  keyEditable = false,
 }: JsonSchemaBuilderProps) {
-  const [newProperty, setNewProperty] = useState<PropertyData | null>(null);
-  const [isAddingProperty, setIsAddingProperty] = useState(false);
-
   const {
     properties,
     metadata,
@@ -122,22 +126,12 @@ export function JsonSchemaBuilder({
     includeMetadata: showMetadata,
   });
 
-  const addProperty = () => {
-    const property = createProperty();
-    setNewProperty(property);
-    setIsAddingProperty(true);
-  };
-
-  const confirmAddProperty = (property: PropertyData) => {
-    updateProperty(property.id, property);
-    setIsAddingProperty(false);
-    setNewProperty(null);
-  };
-
-  const cancelAddProperty = () => {
-    setIsAddingProperty(false);
-    setNewProperty(null);
-  };
+  const addPropertyDialog = useDialogManager<PropertyData>({
+    createInitialData: () => createProperty(),
+    onConfirm: (property) => {
+      updateProperty(property.id, property);
+    },
+  });
 
   const clearAll = () => {
     clearAllProperties();
@@ -181,77 +175,85 @@ export function JsonSchemaBuilder({
 
         <div className="flex-1 flex overflow-hidden">
           <div className={showOutput ? "w-3/5 border-r" : "w-full"}>
-            <div className="h-full overflow-auto p-2 space-y-4">
-              {showMetadata && (
-                <SchemaMetadata
-                  title={metadata.title}
-                  description={metadata.description}
-                  version={metadata.version}
-                  onUpdate={(field, value) =>
-                    updateMetadata(field as keyof SchemaMetadataType, value)
-                  }
-                />
-              )}
+            <div className="h-full flex flex-col">
+              <div className="flex-1 overflow-auto p-2 space-y-4">
+                {showMetadata && (
+                  <SchemaMetadata
+                    title={metadata.title}
+                    description={metadata.description}
+                    version={metadata.version}
+                    onUpdate={(field, value) =>
+                      updateMetadata(field as keyof SchemaMetadataType, value)
+                    }
+                  />
+                )}
 
-              {properties.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Plus className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h2 className="text-lg font-medium mb-2">
-                    No {propertyLabel.plural} yet
-                  </h2>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                    Start building your JSON schema by adding your first{" "}
-                    {propertyLabel.singular}
-                  </p>
-                  <Button onClick={addProperty} data-testid="button-add-first">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add {propertyLabel.singular}
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    {properties.map((property) => (
-                      <PropertyDocument
-                        key={property.id}
-                        property={property}
-                        onUpdate={(updated) =>
-                          updateProperty(property.id, updated)
-                        }
-                        onDelete={() => deleteProperty(property.id)}
-                        showRegex={showRegex}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="pt-6">
+                {properties.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <Plus className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h2 className="text-lg font-medium mb-2">
+                      No {propertyLabel.plural} yet
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                      Start building your JSON schema by adding your first{" "}
+                      {propertyLabel.singular}
+                    </p>
                     <Button
-                      onClick={addProperty}
-                      className="w-full"
-                      variant="outline"
-                      data-testid="button-add-property"
+                      onClick={() => addPropertyDialog.open()}
+                      data-testid="button-add-first"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add {propertyLabel.singular}
                     </Button>
                   </div>
-
-                  {showSummary && (
-                    <div className="pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-                      <span>
-                        {properties.length}{" "}
-                        {properties.length === 1
-                          ? propertyLabel.singular
-                          : propertyLabel.plural}
-                      </span>
-                      <span>
-                        {properties.filter((p) => p.required).length} required
-                      </span>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      {properties.map((property) => (
+                        <PropertyDocument
+                          key={property.id}
+                          property={property}
+                          onUpdate={(updated) =>
+                            updateProperty(property.id, updated)
+                          }
+                          onDelete={() => deleteProperty(property.id)}
+                          showRegex={showRegex}
+                          keyEditable={keyEditable}
+                        />
+                      ))}
                     </div>
-                  )}
-                </>
+
+                    {showSummary && (
+                      <div className="pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+                        <span>
+                          {properties.length}{" "}
+                          {properties.length === 1
+                            ? propertyLabel.singular
+                            : propertyLabel.plural}
+                        </span>
+                        <span>
+                          {properties.filter((p) => p.required).length} required
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {properties.length > 0 && (
+                <div className="border-t p-2 pt-4 bg-background">
+                  <Button
+                    onClick={() => addPropertyDialog.open()}
+                    className="w-full"
+                    variant="outline"
+                    data-testid="button-add-property"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add {propertyLabel.singular}
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -263,19 +265,16 @@ export function JsonSchemaBuilder({
           )}
         </div>
 
-        {isAddingProperty && newProperty && (
+        {addPropertyDialog.isOpen && addPropertyDialog.data && (
           <PropertyEditDialog
-            property={newProperty}
-            open={isAddingProperty}
+            property={addPropertyDialog.data}
+            open={addPropertyDialog.isOpen}
             isNewProperty={true}
-            onOpenChange={(open) => {
-              if (!open) {
-                cancelAddProperty();
-              }
-            }}
+            onOpenChange={addPropertyDialog.setIsOpen}
             propertyLabel={propertyLabel}
-            onUpdate={confirmAddProperty}
+            onUpdate={addPropertyDialog.confirm}
             showRegex={showRegex}
+            keyEditable={keyEditable}
           />
         )}
       </div>

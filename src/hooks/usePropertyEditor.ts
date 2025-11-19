@@ -14,6 +14,7 @@ export const usePropertyEditor = (
   property: PropertyData,
   onUpdate: (property: PropertyData) => void,
   isNewProperty: boolean = false,
+  keyEditable: boolean = false,
 ): UsePropertyEditorReturn => {
   const handleFieldChange = (field: keyof PropertyData, value: any) => {
     onUpdate({ ...property, [field]: value });
@@ -33,8 +34,8 @@ export const usePropertyEditor = (
   };
 
   const handleKeyChange = (key: string) => {
-    // Only allow key changes for new properties
-    if (isNewProperty) {
+    // Allow key changes for new properties OR if keyEditable is true
+    if (isNewProperty || keyEditable) {
       handleFieldChange("key", key);
     }
   };

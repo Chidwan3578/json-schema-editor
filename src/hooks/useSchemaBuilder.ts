@@ -34,7 +34,7 @@ export const useSchemaBuilder = ({
   // Parse properties and metadata from controlled schema prop
   const { properties: parsedProperties, metadata: parsedMetadata } = useMemo(
     () => parseSchema(schema),
-    [schema]
+    [schema],
   );
 
   const properties = parsedProperties;
@@ -56,27 +56,41 @@ export const useSchemaBuilder = ({
   }, []);
 
   // Update an existing property or add it if it doesn't exist
-  const updateProperty = useCallback((id: string, updated: PropertyData) => {
-    const exists = properties.some((p) => p.id === id);
-    let updatedProperties: PropertyData[];
-    
-    if (exists) {
-      updatedProperties = properties.map((p) => (p.id === id ? updated : p));
-    } else {
-      // If property doesn't exist, add it
-      updatedProperties = [...properties, updated];
-    }
-    
-    const newSchema = generateSchema(updatedProperties, metadata, includeMetadata);
-    onChange(newSchema);
-  }, [properties, metadata, includeMetadata, onChange]);
+  const updateProperty = useCallback(
+    (id: string, updated: PropertyData) => {
+      const exists = properties.some((p) => p.id === id);
+      let updatedProperties: PropertyData[];
+
+      if (exists) {
+        updatedProperties = properties.map((p) => (p.id === id ? updated : p));
+      } else {
+        // If property doesn't exist, add it
+        updatedProperties = [...properties, updated];
+      }
+
+      const newSchema = generateSchema(
+        updatedProperties,
+        metadata,
+        includeMetadata,
+      );
+      onChange(newSchema);
+    },
+    [properties, metadata, includeMetadata, onChange],
+  );
 
   // Delete a property
-  const deleteProperty = useCallback((id: string) => {
-    const updatedProperties = properties.filter((p) => p.id !== id);
-    const newSchema = generateSchema(updatedProperties, metadata, includeMetadata);
-    onChange(newSchema);
-  }, [properties, metadata, includeMetadata, onChange]);
+  const deleteProperty = useCallback(
+    (id: string) => {
+      const updatedProperties = properties.filter((p) => p.id !== id);
+      const newSchema = generateSchema(
+        updatedProperties,
+        metadata,
+        includeMetadata,
+      );
+      onChange(newSchema);
+    },
+    [properties, metadata, includeMetadata, onChange],
+  );
 
   // Clear all properties and reset metadata
   const clearAll = useCallback(() => {
@@ -86,11 +100,18 @@ export const useSchemaBuilder = ({
   }, [includeMetadata, onChange]);
 
   // Update metadata field
-  const updateMetadata = useCallback((field: keyof SchemaMetadata, value: string) => {
-    const updatedMetadata = { ...metadata, [field]: value };
-    const newSchema = generateSchema(properties, updatedMetadata, includeMetadata);
-    onChange(newSchema);
-  }, [properties, metadata, includeMetadata, onChange]);
+  const updateMetadata = useCallback(
+    (field: keyof SchemaMetadata, value: string) => {
+      const updatedMetadata = { ...metadata, [field]: value };
+      const newSchema = generateSchema(
+        properties,
+        updatedMetadata,
+        includeMetadata,
+      );
+      onChange(newSchema);
+    },
+    [properties, metadata, includeMetadata, onChange],
+  );
 
   // Import schema from file
   const importSchema = useCallback(async () => {

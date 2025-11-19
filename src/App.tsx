@@ -14,7 +14,7 @@ function SchemaBuilderPage() {
       {/* Quick Instructions */}
       <div className="bg-muted/30 border-b px-6 py-3">
         <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1">
-          <div>• Click title to edit inline</div>
+          <div>• Click title, type, or description to edit inline</div>
           <div>• Click circle to toggle required</div>
           <div>• Click edit icon for full editor</div>
           <div>• Click + on objects to nest fields</div>
@@ -30,9 +30,10 @@ function SchemaBuilderPage() {
             setSchema(newSchema);
             console.log("Schema changed:", newSchema);
           }}
-          showMetadata={true}
           propertyLabel={{ singular: "input", plural: "inputs" }}
           className="h-full"
+          showMetadata
+          keyEditable
         />
       </div>
     </div>
