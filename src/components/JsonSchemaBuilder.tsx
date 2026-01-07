@@ -25,7 +25,7 @@ export interface JsonSchemaBuilderProps {
   /**
    * Callback fired when the schema changes
    */
-  onChange: (schema: any) => void;
+  onChange?: (schema: any) => void;
 
   /**
    * Whether to show metadata fields (title, description, version)
@@ -130,7 +130,7 @@ export function JsonSchemaBuilder({
     importSchema,
   } = useSchemaBuilder({
     schema,
-    onChange,
+    onChange: onChange ?? (() => {}),
     includeMetadata: showMetadata,
   });
 
@@ -206,10 +206,10 @@ export function JsonSchemaBuilder({
                 )}
 
                 {properties.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    {!readonly && <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                       <Plus className="w-8 h-8 text-muted-foreground" />
-                    </div>
+                    </div>}
                     <h2 className="text-lg font-medium mb-2">
                       No {propertyLabel.plural} yet
                     </h2>
